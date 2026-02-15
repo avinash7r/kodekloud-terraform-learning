@@ -1,0 +1,7 @@
+- name: Common Kubernetes prerequisites
+  hosts: all
+  become: true
+  roles:
+    - networking
+    - containerd
+    - kubeadm

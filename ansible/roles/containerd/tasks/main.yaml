@@ -1,0 +1,49 @@
+- name: Install dependencies
+  apt:
+    name: curl
+    state: present
+    update_cache: true
+
+- name: Download containerd
+  get_url:
+    url: https://github.com/containerd/containerd/releases/download/v2.2.0/containerd-2.2.0-linux-amd64.tar.gz
+    dest: /tmp/containerd.tar.gz
+
+- name: Extract containerd
+  unarchive:
+    src: /tmp/containerd.tar.gz
+    dest: /usr/local
+    remote_src: yes
+
+- name: Install containerd service
+  get_url:
+    url: https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+    dest: /usr/local/lib/systemd/system/containerd.service
+
+- name: Create containerd config dir
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: Generate containerd config
+  command: containerd config default
+  register: containerd_config
+  changed_when: false
+
+- name: Write config.toml
+  copy:
+    dest: /etc/containerd/config.toml
+    content: "{{ containerd_config.stdout }}"
+
+- name: Enable systemd cgroup
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Reload and start containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: started
+    daemon_reload: true

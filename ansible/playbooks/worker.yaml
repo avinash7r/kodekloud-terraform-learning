@@ -1,0 +1,7 @@
+- name: Join worker nodes
+  hosts: workers
+  become: true
+  tasks:
+    - name: Join cluster
+      command: "{{ hostvars['master']['join_command'] }}"
+      when: join_command is defined

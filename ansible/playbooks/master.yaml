@@ -1,0 +1,27 @@
+- name: Initialize Kubernetes Control Plane
+  hosts: master
+  become: true
+  tasks:
+    - name: Initialize cluster
+      command: >
+        kubeadm init
+        --pod-network-cidr=192.168.0.0/16
+        --apiserver-advertise-address={{ ansible_default_ipv4.address }}
+        --node-name master
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Setup kubeconfig
+      become_user: ubuntu
+      shell: |
+        mkdir -p $HOME/.kube
+        sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+    - name: Install Calico operator
+      become_user: ubuntu
+      command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/tigera-operator.yaml
+
+    - name: Install Calico CRs
+      become_user: ubuntu
+      command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/custom-resources.yaml
